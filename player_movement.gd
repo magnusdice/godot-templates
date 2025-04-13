@@ -1,4 +1,8 @@
 #TODO: If the player rotates, the model rotates
+# Character3D
+#	CollisionShape3D
+#	Node3D(Head)
+#		Camera3D
 extends CharacterBody3D
 
 var speed 
