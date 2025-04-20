@@ -7,5 +7,8 @@ Godot 4 3d - Interact
 https://www.youtube.com/watch?v=b7rjJ9smLeY&t=378s
 https://www.youtube.com/watch?v=BdITgJXExS0
 
+Godot 4 Inventory
+https://www.youtube.com/watch?v=V79YabQZC1s&t=3888s
+
 PS1 TSTS
 https://www.youtube.com/watch?v=Yt15YJqYf8o
