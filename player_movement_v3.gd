@@ -5,8 +5,10 @@
 #	crouching_collision
 #	neck
 #		head
-#     eyes
+#		eyes
 #			Camera3D
+#			AnimationPlayer
+#				AnimationTree
 
 extends CharacterBody3D
 
@@ -19,6 +21,12 @@ extends CharacterBody3D
 @onready var collision_detection: RayCast3D = $collision_detection
 @onready var camera_3d: Camera3D = $neck/head/eyes/Camera3D
 @onready var animation_player: AnimationPlayer = $neck/head/eyes/AnimationPlayer
+@onready var animation_tree: AnimationTree = $neck/head/eyes/AnimationPlayer/AnimationTree
+
+@export_category("Lean Params")
+
+
+
 
 # Speed Vars
 var current_speed : float = 5.0
@@ -39,6 +47,11 @@ var slide_timer : float = 0.0
 var slide_timer_max : float = 1.3 # in seconds
 var slide_vector = Vector2.ZERO
 const SLIDE_SPEED :float = 10.0
+
+#Lean
+@export_range(0.0,1.0) var lean_speed :float = 0.35
+enum {LEFT = -1, CENTER = 0, RIGHT = 1}
+var lean_tween
 
 # headbob
 const HEAD_BOBBING_SPRINT_SPEED : float = 22.0
@@ -81,12 +94,19 @@ func _input(event: InputEvent) -> void:
 		head.rotate_x(deg_to_rad(-event.relative.y * MOUSE_SENSITIVITY))
 		head.rotation.x = clamp(head.rotation.x, deg_to_rad(-60), deg_to_rad(80))
 
+func _lean(blend_amount :int):
+	if lean_tween:
+		lean_tween.kill()
+	
+	lean_tween = get_tree().create_tween()
+	lean_tween.tween_property(animation_tree, "parameters/lean_blend/blend_amount", blend_amount, lean_speed)
+	
+
 func _physics_process(delta: float) -> void:
 	# Getting movement input
 	var input_dir := Input.get_vector("left", "right", "forward", "backward")
 	
 	# Handling Movement State
-	
 	# Crouching
 	if Input.is_action_pressed("crouch"):
 		current_speed = lerp(current_speed, CROUCH_SPEED, delta * lerp_speed)
@@ -136,7 +156,34 @@ func _physics_process(delta: float) -> void:
 		free_looking = false
 		neck.rotation.y = lerp(neck.rotation.y,0.0, delta * lerp_speed)
 		eyes.rotation.z = lerp(eyes.rotation.z,0.0, delta * lerp_speed)
+	
+		# Handle jump.
+	if Input.is_action_just_pressed("jump") and is_on_floor():
+		velocity.y = JUMP_VELOCITY
+		sliding = false
+		animation_tree.active = false
+		animation_player.play("jump")
 		
+	#Handle landing anims
+	if is_on_floor():
+		if last_velocity.y < -4.0:
+			animation_tree.active = false
+			animation_player.play("landing")
+	
+	#fix the issue for active 
+	if animation_player.is_playing() == false:
+		animation_tree.active = true
+	
+	if Input.is_action_just_released("lean_left") or Input.is_action_just_released("lean_right"):
+		if !(Input.is_action_pressed("lean_left") or Input.is_action_pressed("lean_right")):
+			_lean(CENTER)
+	if Input.is_action_pressed("lean_left"):
+		_lean(LEFT)
+		
+	if Input.is_action_pressed("lean_right"):
+		_lean(RIGHT)
+		
+
 	# Handle Sliding
 	if sliding:
 		slide_timer -= delta
@@ -176,16 +223,7 @@ func _physics_process(delta: float) -> void:
 	if not is_on_floor():
 		velocity += get_gravity() * delta
 
-	# Handle jump.
-	if Input.is_action_just_pressed("jump") and is_on_floor():
-		velocity.y = JUMP_VELOCITY
-		sliding = false
-		animation_player.play("jump")
-		
-	#Handle landing anims
-	if is_on_floor():
-		if last_velocity.y < -4.0:
-			animation_player.play("landing")
+
 
 	if is_on_floor():
 		direction = lerp(direction, (transform.basis * Vector3(input_dir.x, 0, input_dir.y)).normalized(), delta * lerp_speed)
